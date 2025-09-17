@@ -121,14 +121,22 @@ def menu():
         "7": ("Ver caminho de crafting", caminho_cli),
         "8": ("Plotar grafo (estático)", lambda s: visualizar_grafo(s)),
         "9": ("Plotar grafo (interativo)", lambda s: visualizar_grafo_interativo(s)),
+        "A": ("📊 Ver estrutura da Lista de Adjacência", lambda s: s.imprimir_estrutura_grafo()),
         "0": ("Sair", None),
     }
+
+    print("\n" + "="*70)
+    print("🎓 SISTEMA DE CRAFTING - ESTRUTURA DE DADOS: LISTA DE ADJACÊNCIA")
+    print("="*70)
+    print("Este projeto implementa um grafo usando LISTA DE ADJACÊNCIA,")
+    print("uma das quatro estruturas de dados para grafos estudadas em aula.")
+    print("="*70)
 
     while True:
         print("\n=== Sistema de Crafting ===")
         for k in sorted(acoes.keys()):
             print(f"{k} - {acoes[k][0]}")
-        escolha = input("Escolha: ").strip()
+        escolha = input("Escolha: ").strip().upper()
 
         if escolha == "0":
             print("Saindo...")

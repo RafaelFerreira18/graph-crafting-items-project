@@ -52,7 +52,8 @@ def list_recipes(db: Session) -> List[models.Receita]:
 
 
 def graph_data(db: Session):
-    nodes = [i.nome for i in list_items(db)]
+    items = list_items(db)
+    nodes = [{"id": i.nome, "label": i.nome, "eh_basico": i.eh_basico} for i in items]
     edges = []
     for r in list_recipes(db):
         for ing in r.ingredientes:

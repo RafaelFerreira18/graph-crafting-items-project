@@ -2,16 +2,37 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Crafting Graph</title>
+    <title>Crafting Graph - Lista de Adjacência</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+      .adjacency-item {
+        transition: all 0.2s ease;
+      }
+      .adjacency-item:hover {
+        background-color: #f3f4f6;
+        transform: translateX(4px);
+      }
+    </style>
   </head>
   <body>
     <div class="min-h-screen bg-gray-50">
-      <div class="max-w-7xl mx-auto p-6">
-        <h1 class="text-2xl font-semibold text-gray-800 mb-6">Crafting - Itens, Receitas e Grafo</h1>
+      <div class="max-w-7xl mx-auto p-6"> 
+        <div class="bg-white rounded-lg shadow mb-6">
+          <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8 px-6">
+              <button id="tab-crafting" class="tab-button py-4 px-1 border-b-2 font-medium text-sm active" onclick="switchTab('crafting')">
+                🔧 Sistema de Crafting
+              </button>
+              <button id="tab-adjacency" class="tab-button py-4 px-1 border-b-2 font-medium text-sm" onclick="switchTab('adjacency')">
+                📊 Lista de Adjacência
+              </button>
+            </nav>
+          </div>
+        </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div id="content-crafting" class="tab-content">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div class="space-y-6">
             <div class="bg-white shadow rounded-lg p-4">
               <h2 class="text-lg font-medium text-gray-700 mb-3">Novo Item</h2>
@@ -59,7 +80,109 @@
           </div>
 
           <div class="lg:col-span-2 bg-white shadow rounded-lg p-2">
-            <div id="network" class="w-full h-[640px] border rounded"></div>
+            <!-- Legenda do grafo -->
+            <div class="mb-4 p-3 bg-gray-50 rounded-lg border">
+              <h3 class="text-sm font-semibold text-gray-700 mb-2">🎨 Legenda do Grafo</h3>
+              <div class="flex items-center gap-6 text-sm">
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded-full bg-green-500 border-2 border-green-600"></div>
+                  <span class="text-gray-700">Recursos Básicos</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-700"></div>
+                  <span class="text-gray-700">Itens Craftáveis</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <div class="w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-gray-400 ml-1"></div>
+                  </div>
+                  <span class="text-gray-700">Dependência de Crafting</span>
+                </div>
+              </div>
+            </div>
+            
+            <div id="network" class="w-full h-[600px] border rounded"></div>
+          </div>
+        </div>
+        </div>
+
+        <!-- Conteúdo da aba Lista de Adjacência -->
+        <div id="content-adjacency" class="tab-content hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Informações acadêmicas -->
+            <div class="bg-white shadow rounded-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-800 mb-4">📚 Lista de Adjacência</h2>
+
+              <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <h4 class="font-semibold text-gray-800 mb-2">📊 Estatísticas do Grafo</h4>
+                  <div id="stats" class="grid grid-cols-2 gap-4 text-sm">
+                    <div class="bg-white rounded p-3 text-center">
+                      <div class="text-2xl font-bold text-blue-600" id="total-vertices">-</div>
+                      <div class="text-gray-600">Vértices (Itens)</div>
+                    </div>
+                    <div class="bg-white rounded p-3 text-center">
+                      <div class="text-2xl font-bold text-green-600" id="total-arestas">-</div>
+                      <div class="text-gray-600">Arestas (Receitas)</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <h4 class="font-semibold text-gray-800 mb-2">🔍 Como Funciona</h4>
+                  <div class="text-sm text-gray-700 space-y-2">
+                    <p><strong>Representação:</strong> Cada item (vértice) mantém uma lista de itens que podem ser craftados com ele.</p>
+                    <p><strong>Exemplo:</strong> Se "Ferro" pode craftar "Espada", então na lista de adjacência de "Ferro" temos ["Espada"].</p>
+                    <p><strong>Complexidade:</strong> O(1) para inserção, O(grau) para busca de adjacentes.</p>
+                  </div>
+                </div>
+
+                <button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-4 py-2" onclick="carregarAdjacencia()">
+                  🔄 Atualizar Lista de Adjacência
+                </button>
+              </div>
+            </div>
+
+            <!-- Visualização da Lista de Adjacência -->
+            <div class="bg-white shadow rounded-lg p-6">
+              <h2 class="text-xl font-bold text-gray-800 mb-4">🗂️ Estrutura da Lista</h2>
+              
+              <div class="mb-4 text-sm text-gray-600">
+                <strong>Formato:</strong> item → [lista de itens craftáveis]
+              </div>
+
+              <div id="adjacency-list" class="space-y-2 max-h-[500px] overflow-y-auto">
+                <div class="text-center text-gray-500 py-8">
+                  Clique em "Atualizar Lista de Adjacência" para visualizar a estrutura
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Análise detalhada por item -->
+          <div class="mt-6 bg-white shadow rounded-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📈 Análise por Item</h2>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left">Item</th>
+                    <th class="px-4 py-2 text-center">Tipo</th>
+                    <th class="px-4 py-2 text-center">Grau de Saída</th>
+                    <th class="px-4 py-2 text-center">Grau de Entrada</th>
+                    <th class="px-4 py-2 text-left">Itens Craftáveis</th>
+                  </tr>
+                </thead>
+                <tbody id="analysis-table">
+                  <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                      Dados serão carregados após atualizar a lista de adjacência
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -69,6 +192,44 @@
       const API = (path) => (localStorage.getItem('API_URL') || 'http://localhost:8000') + path;
       const el = (id) => document.getElementById(id);
       let network;
+
+      // Gerenciamento de abas
+      function switchTab(tabName) {
+        // Esconde todas as abas
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.add('hidden');
+        });
+        
+        // Remove classe ativa de todos os botões
+        document.querySelectorAll('.tab-button').forEach(button => {
+          button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+          button.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        });
+        
+        // Mostra a aba selecionada
+        document.getElementById(`content-${tabName}`).classList.remove('hidden');
+        
+        // Ativa o botão da aba
+        const activeButton = document.getElementById(`tab-${tabName}`);
+        activeButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        activeButton.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+
+        // Carrega dados específicos da aba
+        if (tabName === 'adjacency') {
+          carregarAdjacencia();
+        }
+      }
+
+      // Inicializa estilos das abas
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.tab-button').forEach(button => {
+          if (!button.classList.contains('active')) {
+            button.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+          } else {
+            button.classList.add('border-blue-500', 'text-blue-600');
+          }
+        });
+      });
 
       async function criarItem() {
         const nome = el('itemNome').value.trim();
@@ -104,12 +265,86 @@
       async function atualizar(){
         const res = await fetch(API('/graph/'));
         const data = await res.json();
-        const nodes = new vis.DataSet(data.nodes.map(n=>({id:n, label:n})));
-        const edges = new vis.DataSet(data.edges.map(([u,v])=>({from:u, to:v, arrows:'to'})));
+        
+        // Criar nós com diferentes cores e formatos
+        const nodes = new vis.DataSet(data.nodes.map(node => ({
+          id: node.id,
+          label: node.label,
+          shape: 'circle',  // Força formato circular
+          size: 25,         // Tamanho do círculo
+          font: {
+            size: 14,
+            color: 'white',
+            strokeWidth: 2,
+            strokeColor: '#000000'
+          },
+          // Cores diferentes para itens básicos vs craftáveis
+          color: {
+            background: node.eh_basico ? '#22c55e' : '#3b82f6',  // Verde para básicos, azul para craftáveis
+            border: node.eh_basico ? '#16a34a' : '#1d4ed8',      // Bordas mais escuras
+            highlight: {
+              background: node.eh_basico ? '#16a34a' : '#1d4ed8',
+              border: node.eh_basico ? '#15803d' : '#1e40af'
+            }
+          },
+          borderWidth: 3,
+          // Tooltip explicativo
+          title: `${node.label}${node.eh_basico ? ' (Recurso Básico)' : ' (Item Craftável)'}`
+        })));
+        
+        const edges = new vis.DataSet(data.edges.map(([u,v])=>({
+          from: u, 
+          to: v, 
+          arrows: 'to',
+          color: {
+            color: '#64748b',
+            highlight: '#334155'
+          },
+          width: 2,
+          smooth: {
+            type: 'cubicBezier',
+            forceDirection: 'horizontal',
+            roundness: 0.4
+          }
+        })));
+        
         const container = el('network');
-        const options = { physics: { enabled: true }, interaction: { dragNodes: true } };
-        if(network){ network.setData({nodes, edges}); }
-        else { network = new vis.Network(container, {nodes, edges}, options); }
+        const options = { 
+          physics: { 
+            enabled: true,
+            stabilization: {
+              iterations: 150
+            }
+          }, 
+          interaction: { 
+            dragNodes: true,
+            hover: true,
+            tooltipDelay: 200
+          },
+          nodes: {
+            chosen: {
+              node: function(values, id, selected, hovering) {
+                values.shadowColor = 'rgba(0,0,0,0.3)';
+                values.shadowSize = 10;
+                values.shadowX = 3;
+                values.shadowY = 3;
+              }
+            }
+          },
+          edges: {
+            chosen: {
+              edge: function(values, id, selected, hovering) {
+                values.width = 3;
+              }
+            }
+          }
+        };
+        
+        if(network){ 
+          network.setData({nodes, edges}); 
+        } else { 
+          network = new vis.Network(container, {nodes, edges}, options); 
+        }
       }
 
       async function calcularCusto(){
@@ -132,6 +367,139 @@
         if(!res.ok) return alert('Falha ao calcular caminho');
         const data = await res.json();
         el('resCaminho').textContent = Array.isArray(data.caminho) ? data.caminho.join(' -> ') : '-';
+      }
+
+      // Função para carregar e exibir a Lista de Adjacência
+      async function carregarAdjacencia() {
+        try {
+          const res = await fetch(API('/graph/adjacency'));
+          if (!res.ok) throw new Error('Falha ao carregar lista de adjacência');
+          
+          const data = await res.json();
+          
+          // Atualiza estatísticas
+          el('total-vertices').textContent = data.estatisticas.total_vertices;
+          el('total-arestas').textContent = data.estatisticas.total_arestas;
+          
+          // Renderiza a lista de adjacência
+          renderizarListaAdjacencia(data.adjacency_list, data.nodes_info);
+          
+          // Renderiza a tabela de análise
+          renderizarTabelaAnalise(data);
+          
+        } catch (error) {
+          console.error('Erro ao carregar lista de adjacência:', error);
+          el('adjacency-list').innerHTML = `
+            <div class="text-center text-red-500 py-8">
+              ❌ Erro ao carregar dados: ${error.message}
+            </div>
+          `;
+        }
+      }
+
+      function renderizarListaAdjacencia(adjacencyList, nodesInfo = {}) {
+        const container = el('adjacency-list');
+        
+        if (Object.keys(adjacencyList).length === 0) {
+          container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+              📝 Nenhum item cadastrado ainda.<br>
+              Adicione itens e receitas na aba "Sistema de Crafting"
+            </div>
+          `;
+          return;
+        }
+
+        const html = Object.entries(adjacencyList)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([item, adjacentes]) => {
+            const adjacentesText = adjacentes.length > 0 
+              ? adjacentes.join(', ') 
+              : '<span class="text-gray-400 italic">nenhum</span>';
+            
+            const badgeColor = adjacentes.length > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600';
+            
+            // Determina se é item básico ou craftável
+            const isBasico = nodesInfo[item]?.eh_basico || false;
+            const tipoColor = isBasico ? 'bg-green-500' : 'bg-blue-500';
+            const tipoText = isBasico ? 'BÁSICO' : 'CRAFTÁVEL';
+            
+            return `
+              <div class="adjacency-item border rounded-lg p-4 bg-gray-50">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full ${tipoColor}"></div>
+                    <span class="font-semibold text-gray-800">${item}</span>
+                    <span class="px-2 py-1 rounded text-xs bg-gray-200 text-gray-600">${tipoText}</span>
+                  </div>
+                  <span class="px-2 py-1 rounded text-xs ${badgeColor}">
+                    ${adjacentes.length} adjacente${adjacentes.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-600">
+                  <span class="font-medium">→</span> [${adjacentesText}]
+                </div>
+              </div>
+            `;
+          }).join('');
+
+        container.innerHTML = html;
+      }
+
+      function renderizarTabelaAnalise(data) {
+        const tbody = el('analysis-table');
+        const { adjacency_list, estatisticas, nodes_info = {} } = data;
+        
+        if (Object.keys(adjacency_list).length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                Nenhum item para analisar
+              </td>
+            </tr>
+          `;
+          return;
+        }
+
+        const html = Object.entries(adjacency_list)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([item, adjacentes]) => {
+            const grauSaida = estatisticas.graus_saida[item] || 0;
+            const grauEntrada = estatisticas.graus_entrada[item] || 0;
+            const craftaveisText = adjacentes.length > 0 ? adjacentes.join(', ') : '-';
+            const isBasico = nodes_info[item]?.eh_basico || false;
+            const tipoText = isBasico ? 'BÁSICO' : 'CRAFTÁVEL';
+            const tipoColor = isBasico ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+            
+            return `
+              <tr class="border-t hover:bg-gray-50">
+                <td class="px-4 py-2">
+                  <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full ${isBasico ? 'bg-green-500' : 'bg-blue-500'}"></div>
+                    <span class="font-medium">${item}</span>
+                  </div>
+                </td>
+                <td class="px-4 py-2 text-center">
+                  <span class="px-2 py-1 rounded text-xs ${tipoColor}">
+                    ${tipoText}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-center">
+                  <span class="px-2 py-1 rounded text-xs bg-blue-100 text-blue-800">
+                    ${grauSaida}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-center">
+                  <span class="px-2 py-1 rounded text-xs bg-purple-100 text-purple-800">
+                    ${grauEntrada}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-sm text-gray-600">${craftaveisText}</td>
+              </tr>
+            `;
+          }).join('');
+
+        tbody.innerHTML = html;
       }
 
       atualizar();

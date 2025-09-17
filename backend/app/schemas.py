@@ -42,8 +42,14 @@ class ReceitaOut(BaseModel):
         from_attributes = True
 
 
+class GraphNode(BaseModel):
+    id: str
+    label: str
+    eh_basico: bool
+
+
 class GraphOut(BaseModel):
-    nodes: List[str]
+    nodes: List[GraphNode]
     edges: List[tuple]
 
 
