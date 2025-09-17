@@ -4,13 +4,6 @@ Um sistema completo para gerenciar itens e receitas de crafting, com visualizaç
 
 ## 🎓 **Estrutura de Dados Implementada**
 
-**✅ LISTA DE ADJACÊNCIA** - Uma das quatro estruturas de dados para grafos estudadas em aula:
-
-1. **Lista de Adjacência** ✅ (IMPLEMENTADA)
-2. Matriz de Adjacência
-3. Matriz de Incidência  
-4. Conjuntos
-
 A **Lista de Adjacência** armazena para cada vértice (item) uma lista de seus vértices adjacentes (itens que podem ser craftados). Esta implementação permite:
 - ✅ Busca eficiente de dependências
 - ✅ Navegação pelos caminhos de crafting
@@ -66,7 +59,7 @@ pip install -r requirements.txt
 # Padrão: postgresql+psycopg2://postgres:postgres@localhost:5432/crafting
 
 # 5. Execute a API
-uvicorn app.main:app --reload
+uvicorn backend.app.main:app --reload
 ```
 
 A API estará disponível em: `http://localhost:8000`
