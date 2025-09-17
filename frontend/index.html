@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Crafting Graph</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  </head>
+  <body>
+    <div class="min-h-screen bg-gray-50">
+      <div class="max-w-7xl mx-auto p-6">
+        <h1 class="text-2xl font-semibold text-gray-800 mb-6">Crafting - Itens, Receitas e Grafo</h1>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="space-y-6">
+            <div class="bg-white shadow rounded-lg p-4">
+              <h2 class="text-lg font-medium text-gray-700 mb-3">Novo Item</h2>
+              <input id="itemNome" placeholder="Nome do item" class="w-full border rounded px-3 py-2 mb-2" />
+              <label class="inline-flex items-center gap-2 text-sm text-gray-600 mb-3">
+                <input type="checkbox" id="itemBasico" class="rounded" /> Básico
+              </label>
+              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-2" onclick="criarItem()">Criar item</button>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-4">
+              <h2 class="text-lg font-medium text-gray-700 mb-3">Nova Receita</h2>
+              <input id="resultadoNome" placeholder="Item resultante" class="w-full border rounded px-3 py-2 mb-2" />
+              <input id="qtdResultado" placeholder="Qtd resultante" value="1" class="w-full border rounded px-3 py-2 mb-3" />
+              <div id="ingredientes" class="space-y-2"></div>
+              <div class="flex gap-2 mt-2">
+                <button class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded px-3 py-2" onclick="addIng()">Adicionar ingrediente</button>
+                <button class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded px-3 py-2" onclick="criarReceita()">Criar receita</button>
+              </div>
+            </div>
+
+            <div class="bg-white shadow rounded-lg p-4">
+              <h2 class="text-lg font-medium text-gray-700 mb-3">Algoritmos</h2>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">Recursos básicos (vírgula)</label>
+                  <input id="basicos" placeholder="Ex.: Tronco de madeira, Ferro" class="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-600 mb-1">Item alvo</label>
+                  <input id="alvo" placeholder="Ex.: Espada de ferro" class="w-full border rounded px-3 py-2" />
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <button class="bg-indigo-600 hover:bg-indigo-700 text-white rounded px-3 py-2" onclick="calcularCusto()">Custo mínimo (Dijkstra)</button>
+                  <button class="bg-purple-600 hover:bg-purple-700 text-white rounded px-3 py-2" onclick="calcularCaminho()">Caminho de crafting</button>
+                </div>
+                <div class="bg-gray-50 border rounded p-3 text-sm text-gray-800">
+                  <div><span class="font-semibold">Custo:</span> <span id="resCusto">-</span></div>
+                  <div class="mt-2"><span class="font-semibold">Caminho:</span> <span id="resCaminho">-</span></div>
+                </div>
+              </div>
+            </div>
+
+            <button class="w-full bg-gray-800 hover:bg-black text-white rounded px-3 py-2" onclick="atualizar()">Atualizar grafo</button>
+          </div>
+
+          <div class="lg:col-span-2 bg-white shadow rounded-lg p-2">
+            <div id="network" class="w-full h-[640px] border rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API = (path) => (localStorage.getItem('API_URL') || 'http://localhost:8000') + path;
+      const el = (id) => document.getElementById(id);
+      let network;
+
+      async function criarItem() {
+        const nome = el('itemNome').value.trim();
+        const eh_basico = el('itemBasico').checked;
+        if(!nome) return alert('Informe o nome.');
+        const res = await fetch(API('/items/'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nome, eh_basico}) });
+        if(!res.ok) return alert('Falha ao criar item');
+        el('itemNome').value=''; el('itemBasico').checked=false; atualizar();
+      }
+
+      function addIng(){
+        const wrapper = document.createElement('div');
+        wrapper.className = "grid grid-cols-3 gap-2";
+        wrapper.innerHTML = `
+          <input class="ingNome col-span-2 border rounded px-3 py-2" placeholder="Ingrediente" />
+          <input class="ingQtd border rounded px-3 py-2" placeholder="Qtd" value="1" />
+        `;
+        el('ingredientes').appendChild(wrapper);
+      }
+
+      async function criarReceita(){
+        const resultado_nome = el('resultadoNome').value.trim();
+        const quantidade_resultado = parseInt(el('qtdResultado').value || '1', 10);
+        const nomes = Array.from(document.querySelectorAll('.ingNome')).map(i=>i.value.trim());
+        const qtds = Array.from(document.querySelectorAll('.ingQtd')).map(i=>parseInt(i.value||'1',10));
+        const ingredientes = nomes.map((n,i)=>({item_nome:n, quantidade:qtds[i]||1})).filter(x=>x.item_nome);
+        if(!resultado_nome || ingredientes.length===0) return alert('Informe resultado e ao menos um ingrediente.');
+        const res = await fetch(API('/recipes/'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({resultado_nome, quantidade_resultado, ingredientes}) });
+        if(!res.ok) return alert('Falha ao criar receita');
+        el('resultadoNome').value=''; el('qtdResultado').value='1'; el('ingredientes').innerHTML=''; atualizar();
+      }
+
+      async function atualizar(){
+        const res = await fetch(API('/graph/'));
+        const data = await res.json();
+        const nodes = new vis.DataSet(data.nodes.map(n=>({id:n, label:n})));
+        const edges = new vis.DataSet(data.edges.map(([u,v])=>({from:u, to:v, arrows:'to'})));
+        const container = el('network');
+        const options = { physics: { enabled: true }, interaction: { dragNodes: true } };
+        if(network){ network.setData({nodes, edges}); }
+        else { network = new vis.Network(container, {nodes, edges}, options); }
+      }
+
+      async function calcularCusto(){
+        const item_alvo = el('alvo').value.trim();
+        const basicosStr = el('basicos').value.trim();
+        const recursos_basicos = basicosStr ? basicosStr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+        if(!item_alvo) return alert('Informe o item alvo.');
+        const res = await fetch(API('/algorithms/cost'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item_alvo, recursos_basicos }) });
+        if(!res.ok) return alert('Falha ao calcular custo');
+        const data = await res.json();
+        el('resCusto').textContent = String(data.custo);
+      }
+
+      async function calcularCaminho(){
+        const item_alvo = el('alvo').value.trim();
+        const basicosStr = el('basicos').value.trim();
+        const recursos_basicos = basicosStr ? basicosStr.split(',').map(s=>s.trim()).filter(Boolean) : [];
+        if(!item_alvo) return alert('Informe o item alvo.');
+        const res = await fetch(API('/algorithms/path'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ item_alvo, recursos_basicos }) });
+        if(!res.ok) return alert('Falha ao calcular caminho');
+        const data = await res.json();
+        el('resCaminho').textContent = Array.isArray(data.caminho) ? data.caminho.join(' -> ') : '-';
+      }
+
+      atualizar();
+      addIng();
+    </script>
+  </body>
+  </html>
+
+
